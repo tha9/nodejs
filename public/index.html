@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Submit Job<h2>
+
+<form action="/track-flight/" method='post'>
+    <label for="flyfrom">Departure Airport </label><br>
+  <input type="text" id="flyfrom" name="flyfrom" value="">
+  <br>
+  
+    <label for=flyto>Destination Airport </label> <br>
+  <input type="text" id="flyto" name="flyto" value="">
+  <br><br>
+ 
+    <label for=trackingEnd>How long should we track this flight?</label><br>
+    <input type="number" min="1" max="30" id='trackingEnd' name='trackingEnd' value='1'>
+    <br><br>   
+    
+    <label for=dDate>Date of Departure</label><br>
+    <input type='date' name='dDate' id=dDate >
+    <br><br>
+    
+    <label for=rDate>Date of Return</label><br>
+    <input type='date' name='rDate' id=rDate >
+    <br><br>
+  <input type="submit" value="Track Flight">
+</form> 
+
+    <a href='/viewdata'>Click here for data</a>
+</body>
+</html>

@@ -1,0 +1,119 @@
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  font-family: Montserrat, sans-serif;
+  font-wight: 500;
+  font-size: 12px;
+}
+
+.root {
+  display: flex;
+}
+
+.axis text {
+  font-weight: bold;
+}
+
+.y-axis text {
+  text-anchor: end;
+}
+
+.axis path {
+  display: none;
+}
+
+.axis line {
+  stroke-opacity: 0.3;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.legend-item {
+  cursor: pointer;
+}
+
+.legend-item:hover {
+  text-decoration: underline;
+}
+
+.extra-options-container {
+  font-size: 12px;
+  margin-top: 5px;
+  display: flex;
+  width: 100px;
+  margin-left: 57px;
+  justify-content: space-between;
+}
+
+.hide-all-option, .show-all-option {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hide-all-option:hover, .show-all-option:hover {
+  text-decoration: none;
+}
+
+.voronoi path {
+  fill: none;
+  pointer-events: all;
+}
+
+.voronoi-show path {
+  stroke: red;
+  stroke-opacity: 0.2;
+}
+
+.region-hover {
+  stroke: #000;
+  stroke-width: 4px;
+}
+
+.actions {
+  display: flex;
+  width: 681px;
+  padding-left: 49px;
+  justify-content: space-between;
+}
+
+.header {
+  display: flex;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.title {
+  padding-right: 40px;
+  margin: 0;
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 27px;
+  margin-top: 21px;
+  padding-left: 48px;
+  width: 718px;
+  box-sizing: border-box;
+}
+
+.preview {
+  position: relative;
+}
+
+.preview-rect {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.preview-axis.x-axis .tick:nth-child(2) text {
+  text-anchor: start;
+}
+
+.preview-axis.x-axis .tick:nth-child(3) text {
+  text-anchor: end;
+}
