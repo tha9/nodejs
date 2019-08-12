@@ -1,0 +1,24 @@
+<div class="header">
+    <h2 class="title">
+        Flight Data Visualization
+    </h2>
+        <script src="http://d3js.org/d3.v5.min.js"></script>
+
+    <div class="preview"></div>
+</div>
+
+<div class="actions">
+    <label id="form" for="show-voronoi">
+        Show Voronoi diagram
+        <input type="checkbox" id="show-voronoi" disabled>
+    </label>
+    <button class="reset-zoom-button">Reset zoom</button>
+</div>
+<div class="root">
+  <link rel="stylesheet" href="body.css">
+
+    <div class="chart"></div>
+    <div class="legend"></div>
+    <div class="moreInfo"></div>
+</div>
+<script src=./index.js></script>
