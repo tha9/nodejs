@@ -1,5 +1,5 @@
 var unirest= require('unirest');
-var fs = require('fs');
+var mysql = require('mysql'); //var fs = require('fs');
 var sleep = require('await-sleep');
  
 var lowestprice ='undefined'
@@ -27,6 +27,13 @@ process.on('message', async (message) => {
 });
 
 var currentprice = 200;
+var con = mysql.createConnection({
+  host: "34.68.242.234",
+  user: "test",
+  password: "ifp6MtJ!Giwjmp7",
+  database: "my-flight-data"
+});
+
 function kiwirequest(flyto,flyfrom,ddate,rdate,flightType) {
     //range of dates
     date1 = '18/8/2019'
@@ -42,7 +49,7 @@ function kiwirequest(flyto,flyfrom,ddate,rdate,flightType) {
          console.log(logoutput+"(+"+(response.body.data[0].price-currentprice)+")");
          }
         currentprice = response.body.data[0].price;
-        const path = './data/'+flyfrom+'-'+flyto+'.csv'
+       /* const path = './data/'+flyfrom+'-'+flyto+'.csv'
 
         if (addData == 'unknown') {
             try {
@@ -63,7 +70,16 @@ function kiwirequest(flyto,flyfrom,ddate,rdate,flightType) {
             } catch(err) {
              
             }
-        } 
+        } */
+     con.connect(function(err) {
+      if (err) throw err;
+      console.log("Connected!");
+      var sql = "INSERT INTO customers (name, address) VALUES ('Company Inc', 'Highway 37')";
+      con.query(sql, function (err, result) {
+       if (err) throw err;
+       console.log("1 record inserted");
+      });
+     });
         flightType = response.body.data[0].duration.return;
         var time =new Date().toISOString()//.match(/(\d{2}:){2}\d{2}/)[0]
         //check connections
@@ -77,10 +93,11 @@ function kiwirequest(flyto,flyfrom,ddate,rdate,flightType) {
             }
             connections = connections+'}';
         }
+     /*
         fs.appendFile(path, '\n'+flyfrom+','+flyto+','+response.body.data[0].price+','+time+','+flightType+','+connections+','+response.body.data[0].fly_duration+','+response.body.data[0].aTimeUTC+','+response.body.data[0].duration.departure+','+response.body.data[0].atime_from+','+response.body.data[0].duration.return+','+response.body.data[0].route[0].operating_carrier+','+'token', (err) => {
             //token --response.body.data[0].booking_token
-            if (err) throw err;
-        }); 
+            if (err) throw err; 
+        }); */
     });
 }
 
