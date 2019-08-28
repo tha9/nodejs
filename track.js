@@ -12,7 +12,7 @@ async function trackflights(flightdata) {
     }
     var i = 0, iterations = flightdata.trackingEnd;
     for (i = 0; i < iterations; i++) { 
-        kiwirequest(flightdata.flyto,flightdata.flyfrom,formatDate(flightdata.dDate),formatDate(flightdata.rDate));
+        kiwirequest(flightdata.token,flightdata.flyto,flightdata.flyfrom,formatDate(flightdata.dDate),formatDate(flightdata.rDate));
         await sleep(15*60*1000);
     }
    return lowestprice;
@@ -31,14 +31,32 @@ var con = mysql.createConnection({
   host: "34.68.242.234",
   user: "test",
   password: "ifp6MtJ!Giwjmp7",
-  database: "my-flight-data"
+  database: "Tracked_Flights"
 });
 
-function kiwirequest(flyto,flyfrom,ddate,rdate,flightType) {
+function kiwirequest(token,flyto,flyfrom,ddate,rdate,flightType) {
     //range of dates
-    date1 = '18/8/2019'
-    date2 = '24/8/2019'
+    date1 = '18/10/2019'
+    date2 = '24/10/2019'
+    token = +token;
     var addData = 'unknown'
+    var time =new Date().toISOString().slice(0, 19).replace('T', ' ');
+//.toISOString()//.match(/(\d{2}:){2}\d{2}/)[0]
+
+      //need to add to this table first so that foreign key is valid (will need additional SQL to update if tracking fails
+    if(currentprice === 200) {
+        con.connect(function(err) {
+              if (err) throw err;
+              console.log("Connected!");
+              var sql = "INSERT INTO tracking (token,username,tracking_length,submission_time,route) VALUES ("+token+",'tarik_akyuz',3,'"+time+"','"+flyfrom+"_"+flyto+"')";
+                 console.log(sql);
+              con.query(sql, function (err, result) {
+               if (err) throw err;
+               console.log("1 record inserted");
+              });
+        });
+    }
+    
     unirest.get('https://api.skypicker.com/flights?flyFrom='+flyfrom+'&to='+flyto+'&dateFrom='+date1+'&dateTo='+date2+'&partner=picky')
 .end(function (response) {
         if (currentprice == "") {currentprice = response.body.data[0].price};
@@ -71,17 +89,8 @@ function kiwirequest(flyto,flyfrom,ddate,rdate,flightType) {
              
             }
         } */
-     con.connect(function(err) {
-      if (err) throw err;
-      console.log("Connected!");
-      var sql = "INSERT INTO customers (name, address) VALUES ('Company Inc', 'Highway 37')";
-      con.query(sql, function (err, result) {
-       if (err) throw err;
-       console.log("1 record inserted");
-      });
-     });
+     
         flightType = response.body.data[0].duration.return;
-        var time =new Date().toISOString()//.match(/(\d{2}:){2}\d{2}/)[0]
         //check connections
         var numConnections = response.body.data[0].route.length
         var connections = '{'
@@ -93,11 +102,26 @@ function kiwirequest(flyto,flyfrom,ddate,rdate,flightType) {
             }
             connections = connections+'}';
         }
+        var atime_from = response.body.data[0].atime_from+"";
+        if(atime_from == 'undefined') {
+            atime_from = 'NULL';
+        }
+        var operating_carrier = response.body.data[0].route[0].operating_carrier;
+        if(operating_carrier == '') {
+            operating_carrier = 'NULL';
+        }
+          var sql = "INSERT INTO flights (token, flyFrom, flyTo, Lowest_Price_Found, Time_Collected, Flight_Date, OW_RT, connections, flight_time_total, a_time_to, duration_to, a_time_from, duration_from, carrier) VALUES ("+token+",'"+flyfrom+"','"+flyto+"',"+response.body.data[0].price+",'"+time+"','"+(new Date(response.body.data[0].aTimeUTC)).toISOString().slice(0,19).replace('T',' ')+"','"+flightType+"','"+connections+"','"+response.body.data[0].fly_duration+"','"+(new Date(response.body.data[0].aTimeUTC)).toISOString().slice(0,19).replace('T',' ')+"',"+response.body.data[0].duration.departure+","+atime_from+","+response.body.data[0].duration.return+",'"+operating_carrier+"')";
+        console.log(sql);
+          con.query(sql, function (err, result) {
+              if (err) throw err
+              console.log('sql flights table updates');
+          });
      /*
         fs.appendFile(path, '\n'+flyfrom+','+flyto+','+response.body.data[0].price+','+time+','+flightType+','+connections+','+response.body.data[0].fly_duration+','+response.body.data[0].aTimeUTC+','+response.body.data[0].duration.departure+','+response.body.data[0].atime_from+','+response.body.data[0].duration.return+','+response.body.data[0].route[0].operating_carrier+','+'token', (err) => {
             //token --response.body.data[0].booking_token
             if (err) throw err; 
         }); */
+   
     });
 }
 

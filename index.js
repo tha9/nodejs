@@ -1,7 +1,8 @@
 const express = require('express');
 var app = express();
+var mysql = require('mysql');
 
-var server = app.listen(process.env.PORT || 3001, listen);
+var server = app.listen(process.env.PORT || 3000, listen);
 var fs = require('fs');
 const { fork } = require('child_process');
 
@@ -9,7 +10,16 @@ const d3 = require("d3");
 var jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
+var KEYTOKEN = 6;
 
+var sql = "SELECT token, flyFrom, flyTo, Lowest_Price_Found, Time_Collected, Flight_Date, OW_RT, connections, flight_time_total, a_time_to, duration_to, a_time_from, duration_from, carrier FROM flights"
+
+var con = mysql.createConnection({
+  host: "34.68.242.234",
+  user: "read_only",
+  password: "$$123##abcdefghijklmnopqrstuv!",
+  database: "Tracked_Flights"
+});
 
 
 // This call back just tells us that the server has started
@@ -50,41 +60,6 @@ function showAll(req, res) {
 
 // respond with "hello world" when a GET request is made to the homepage
 app.get('/viewdata', function (req, res) {
-    var stringy = "";
-    var files = fs.readdirSync('./data');
-    for (var i = 0; i  < files.length; i++) {
-        var txt = ""
-        txt = txt+ fs.readFileSync('./data/'+files[i], 'utf8')+" ";
-        console.log(files[i]);
-        console.log("code to send data to client");
-      
-    }
-    const { window } = new JSDOM();
-    const { document } = (new JSDOM('')).window;
-    global.document = document;
-    var width = 400, height = 70;
-    var svg = d3.select("body").append("svg")
-                .attr("width", width)
-                .attr("height", height);
-
-    // The data set
-    var dataset = [1,2,3,4];
-
-    // Add the circles to the svg
-    var circles = svg.selectAll("circle")
-        .data(dataset)
-        .enter()
-        .append("circle");
-
-    // d is the data given by callback
-    // and i is the data position in the array
-    circles.attr("cx", function(d, i) {
-                    return (i * 50) + 25;
-                })
-                .attr("cy", height/2)
-                .attr("r", function(d) {
-                    return d*2;
-                });
     
    res.sendFile(__dirname + '/public/data.html');
 
@@ -93,6 +68,13 @@ app.get('/viewdata', function (req, res) {
     
 });
     
+app.get('/mysql',function(req,res) {
+    res.setHeader('Content-Type', 'application/json');
+    con.query(sql, function (err, result) {
+              if (err) throw err
+              res.json(result);
+          });
+});
 
 app.post('/track-flight', (req, res) => {
     const flyto = req.body.flyto
@@ -100,7 +82,13 @@ app.post('/track-flight', (req, res) => {
     console.log("Now Tracking a flight from "+req.body.flyfrom+" to "+req.body.flyto+"!");
    // fork a process to track flight
    const process = fork('./track.js');
-   const trackdata = req.body;
+   var oldObj = req.body, newObj = eval({token: KEYTOKEN});
+    KEYTOKEN = KEYTOKEN+1;
+    for(prop in newObj) {
+        oldObj[prop] = newObj[prop];
+    }
+   const trackdata = JSON.stringify(oldObj);
+   
    // send list data to forked process
    process.send(req.body);
    // listen for messages from forked process
