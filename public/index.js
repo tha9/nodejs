@@ -1,4 +1,4 @@
-d3.csv('http://localhost:3001/data/file2.csv').then(data => draw(data));
+d3.json("http://localhost:3000/mysql").then(data => draw(data));
 
 const ENABLED_OPACITY = 1;
 const DISABLED_OPACITY = .2;
@@ -6,7 +6,6 @@ const timeFormatter = d3.timeFormat('%d-%m-%Y');
 function additionalInfo(data){
       console.log("here");
   }
-
 function draw(data) {
   const margin = { top: 20, right: 20, bottom: 250, left: 50 };
   const previewMargin = { top: 10, right: 10, bottom: 15, left: 30 };
@@ -76,15 +75,15 @@ function draw(data) {
     .attr('transform', `translate(${ margin.left },${ margin.top })`);
 
   data.forEach(function (d) {
-    d.date = new Date(d.date);
-    d.percent = +d.percent;
+    d.Time_Collected = new Date(d.Time_Collected);
+    d.Lowest_Price_Found = +d.Lowest_Price_Found;
   });
 
-  x.domain(d3.extent(data, d => d.date.getTime()));
-  y.domain([0, d3.max(data, d => d.percent*1.2)]);
-  previewX.domain(d3.extent(data, d => d.date.getTime()));
-  previewY.domain([0, d3.max(data, d => d.percent*1.2)]);
-  colorScale.domain(d3.map(data, d => d.regionId).keys());
+  x.domain(d3.extent(data, d => d.Time_Collected.getTime()));
+  y.domain([0, d3.max(data, d => d.Lowest_Price_Found*1.2)]);
+  previewX.domain(d3.extent(data, d => d.Time_Collected.getTime()));
+  previewY.domain([0, d3.max(data, d => d.Lowest_Price_Found*1.2)]);
+  colorScale.domain(d3.map(data, d => d.token).keys());
 
   const xAxis = d3.axisBottom(x)
     .ticks((width + 2) / (height + 2) * 5)
@@ -131,19 +130,19 @@ function draw(data) {
     .attr('height', height);
 
   const nestByRegionId = d3.nest()
-    .key(d => d.regionId)
+    .key(d => d.token)
     .sortKeys((v1, v2) => (parseInt(v1, 10) > parseInt(v2, 10) ? 1 : -1))
     .entries(data);
 
   const regionsNamesById = {};
 
   nestByRegionId.forEach(item => {
-    regionsNamesById[item.key] = item.values[0].regionName +'-'+item.values[0].flyTo;
+    regionsNamesById[item.key] = item.values[0].flyFrom +'-'+item.values[0].flyTo;
   });
 
   const regions = {};
 
-  d3.map(data, d => d.regionId)
+  d3.map(data, d => d.token)
     .keys()
     .forEach(function (d, i) {
       regions[d] = {
@@ -155,11 +154,11 @@ function draw(data) {
   const regionsIds = Object.keys(regions);
 
   const lineGenerator = d3.line()
-    .x(d => rescaledX(d.date.getTime()))
-    .y(d => rescaledY(d.percent));
+    .x(d => rescaledX(d.Time_Collected.getTime()))
+    .y(d => rescaledY(d.Lowest_Price_Found));
 
   const nestByDate = d3.nest()
-    .key(d => d.date.getTime())
+    .key(d => new Date(Math.round(d.Time_Collected.getTime()/(1000*60*15)) * (1000*60*15)))
     .entries(data);
 
   const percentsByDate = {};
@@ -168,7 +167,7 @@ function draw(data) {
     percentsByDate[dateItem.key] = {};
 
     dateItem.values.forEach(item => {
-      percentsByDate[dateItem.key][item.regionId] = item.percent;
+      percentsByDate[dateItem.key][item.token] = item.Lowest_Price_Found;
     });
   });
 
@@ -195,7 +194,7 @@ function draw(data) {
     .enter()
     .append('g')
     .attr('class', 'legend-item')
-    .attr('transform', (regionId, index) => `translate(0,${ index * 20 + 20 })`)
+    .attr('transform', (token, index) => `translate(0,${ index * 20 + 20 })`)
     .on('click', clickLegendRectHandler);
 
   const legendsValues = legends
@@ -209,12 +208,12 @@ function draw(data) {
     .attr('y', 0)
     .attr('width', 12)
     .attr('height', 12)
-    .style('fill', regionId => colorScale(regionId))
+    .style('fill', token => colorScale(token))
     .select(function() { return this.parentNode; })
     .append('text')
     .attr('x', 78)
     .attr('y', 10)
-    .text(regionId => regionsNamesById[regionId])
+    .text(token => regionsNamesById[token])
     .attr('class', 'legend-text')
     .style('text-anchor', 'start');
 
@@ -225,8 +224,8 @@ function draw(data) {
     .attr('class', 'hide-all-option')
     .text('hide all')
     .on('click', () => {
-      regionsIds.forEach(regionId => {
-        regions[regionId].enabled = false;
+      regionsIds.forEach(token => {
+        regions[token].enabled = false;
       });
       moreInfoContainerData.style('visibility', 'hidden');
 
@@ -239,8 +238,8 @@ function draw(data) {
     .attr('class', 'show-all-option')
     .text('show all')
     .on('click', () => {
-      regionsIds.forEach(regionId => {
-        regions[regionId].enabled = true;
+      regionsIds.forEach(token => {
+        regions[token].enabled = true;
       });
 
       singleLineSelected = false;
@@ -254,8 +253,8 @@ function draw(data) {
   let singleLineSelected = false;
 
   const voronoi = d3.voronoi()
-    .x(d => x(d.date.getTime()))
-    .y(d => y(d.percent))
+    .x(d => x(d.Time_Collected.getTime()))
+    .y(d => y(d.Lowest_Price_Found))
     .extent([[0, 0], [width, height]]);
 
   const hoverDot = svg.append('circle')
@@ -323,8 +322,8 @@ function draw(data) {
     .attr('fill', '#dedede');
   
   const previewLineGenerator = d3.line()
-    .x(d => previewX(d.date.getTime()))
-    .y(d => previewY(d.percent));
+    .x(d => previewX(d.Time_Collected.getTime()))
+    .y(d => previewY(d.Lowest_Price_Found));
 
   const draggedNode = previewContainer
     .append('rect')
@@ -339,7 +338,7 @@ function draw(data) {
   redrawChart();
 
 function redrawChart(showingRegionsIds) {
-    const enabledRegionsIds = showingRegionsIds || regionsIds.filter(regionId => regions[regionId].enabled);
+    const enabledRegionsIds = showingRegionsIds || regionsIds.filter(token => regions[token].enabled);
 
     const paths = linesContainer
       .selectAll('.line')
@@ -359,9 +358,9 @@ function redrawChart(showingRegionsIds) {
         .append('path')
         .merge(previewPath)
         .attr('class', 'line')
-        .attr('d', regionId => previewLineGenerator(regions[regionId].data)
+        .attr('d', token => previewLineGenerator(regions[token].data)
         )
-        .style('stroke', regionId => colorScale(regionId));
+        .style('stroke', token => colorScale(token));
     }
 
     paths
@@ -369,18 +368,19 @@ function redrawChart(showingRegionsIds) {
       .append('path')
       .merge(paths)
       .attr('class', 'line')
-      .attr('id', regionId => `region-${ regionId }`)
-      .attr('d', regionId => lineGenerator(regions[regionId].data)
+      .attr('id', token => `region-${ token }`)
+      .attr('d', token => lineGenerator(regions[token].data)
       )
-      .style('stroke', regionId => colorScale(regionId));
+      .style('stroke', token => colorScale(token));
 
-    legends.each(function(regionId) {
-      const opacityValue = enabledRegionsIds.indexOf(regionId) >= 0 ? ENABLED_OPACITY : DISABLED_OPACITY;
+    legends.each(function(token) {
+      const opacityValue = enabledRegionsIds.indexOf(token+"") >= 0 ? ENABLED_OPACITY : DISABLED_OPACITY;
 
       d3.select(this).attr('opacity', opacityValue);
     });
 
-    const filteredData = data.filter(dataItem => enabledRegionsIds.indexOf(dataItem.regionId) >= 0);
+    const filteredData = data.filter(dataItem => enabledRegionsIds.indexOf(dataItem.token+"") >= 0);
+    
 
     const voronoiPaths = voronoiGroup.selectAll('path')
       .data(voronoi.polygons(filteredData));
@@ -397,15 +397,15 @@ function redrawChart(showingRegionsIds) {
       .on('click', voronoiClick);
   }
 
-  function clickLegendRectHandler(regionId) {
+  function clickLegendRectHandler(token) {
     if (singleLineSelected) {
-      const newEnabledRegions = singleLineSelected === regionId ? [] : [singleLineSelected, regionId];
+      const newEnabledRegions = singleLineSelected === token ? [] : [singleLineSelected, token];
 
       regionsIds.forEach(currentRegionId => {
         regions[currentRegionId].enabled = newEnabledRegions.indexOf(currentRegionId) >= 0;
       });
     } else {
-      regions[regionId].enabled = !regions[regionId].enabled;
+      regions[token].enabled = !regions[token].enabled;
     }
 
     singleLineSelected = false;
@@ -416,18 +416,19 @@ function redrawChart(showingRegionsIds) {
   function voronoiMouseover(d) {
     const transform = d3.zoomTransform(d3.select('.voronoi-parent').node());
 
-    legendsDate.text(timeFormatter(d.data.date.getTime()));
+    legendsDate.text(timeFormatter(d.data.Time_Collected.getTime()));
     legendsValues.text(dataItem => {
-      const value = percentsByDate[d.data.date.getTime()][dataItem];
-      
+      var coeff = 1000 * 60 * 15;
+      var rounded = new Date(Math.round(d.data.Time_Collected.getTime() / coeff) * coeff)
+      const value = percentsByDate[rounded][dataItem];
       return value ? '$'+value : 'DNE';
     });
 
-    d3.select(`#region-${ d.data.regionId }`).classed('region-hover', true);
+    d3.select(`#region-${ d.data.token }`).classed('region-hover', true);
 
     const previewPath = previewContainer
       .selectAll('path')
-      .data([d.data.regionId]);
+      .data([d.data.token]);
 
     previewPath.exit().remove();
 
@@ -436,37 +437,37 @@ function redrawChart(showingRegionsIds) {
       .append('path')
       .merge(previewPath)
       .attr('class', 'line')
-      .attr('d', regionId => previewLineGenerator(regions[regionId].data))
-      .style('stroke', regionId => colorScale(regionId));
+      .attr('d', token => previewLineGenerator(regions[token].data))
+      .style('stroke', token => colorScale(token));
 
     hoverDot
-      .attr('cx', () => transform.applyX(x(d.data.date.getTime())))
-      .attr('cy', () => transform.applyY(y(d.data.percent)));
+      .attr('cx', () => transform.applyX(x(d.data.Time_Collected.getTime())))
+      .attr('cy', () => transform.applyY(y(d.data.Lowest_Price_Found)));
   }
 
   function voronoiMouseout(d) {
     if (d) {
-      d3.select(`#region-${ d.data.regionId }`).classed('region-hover', false);
+      d3.select(`#region-${ d.data.token }`).classed('region-hover', false);
     }
   }
   let prevDataPoint = -1
   function voronoiClick(d) {
         //this is the same data point
-        if (prevDataPoint == (d.data.date.getTime()+","+d.data.percent)) {
+        if (prevDataPoint == (d.data.Time_Collected.getTime()+","+d.data.Lowest_Price_Found)) {
             singleLineSelected = false;
             prevDataPoint=-1
             moreInfoContainerData.style('visibility', 'hidden');
             redrawChart();
         } else {
-            let atime = new Date(+d.data.atime_to);
-            let innerHTML = 'Price : '+d.data.percent+ "<br>"+'flight info : '+d.data.regionName+'-'+d.data.flyTo+"<br>Arrival Time:"+atime.toString()+"<br>Flight Duration"+d.data.flight_time
-            const regionId = d.data.regionId;
-            console.log("selected: "+d.data.percent);
+            //let atime = new Date(+d.data.a_time_to);
+            let innerHTML = 'Price : '+d.data.Lowest_Price_Found+ "<br>"+'flight info : '+d.data.flyFrom+'-'+d.data.flyTo+"<br>Arrival Time:"+'atime.toString()'+"<br>Flight Duration"+d.data.flight_time_total
+            const token = d.data.token;
+            console.log("selected: "+d.data.Lowest_Price_Found);
             moreInfoContainerData.style('visibility', 'visible');
             moreInfoContainerData.html(innerHTML);
-            singleLineSelected = regionId;
-            prevDataPoint=d.data.date.getTime()+","+d.data.percent;
-            redrawChart([regionId]);
+            singleLineSelected = token;
+            prevDataPoint=d.data.Time_Collected.getTime()+","+d.data.Lowest_Price_Found;
+            redrawChart([token]);
 
         }
   }
@@ -524,11 +525,11 @@ function redrawChart(showingRegionsIds) {
     yAxisElement.call(yAxis.scale(rescaledY));
 
     linesContainer.selectAll('path')
-      .attr('d', regionId => {
+      .attr('d', token => {
         return d3.line()
-          .defined(d => d.percent !== 0)
-          .x(d => rescaledX(d.date.getTime()))
-          .y(d => rescaledY(d.percent))(regions[regionId].data);
+          .defined(d => d.Lowest_Price_Found !== 0)
+          .x(d => rescaledX(d.Time_Collected.getTime()))
+          .y(d => rescaledY(d.Lowest_Price_Found))(regions[token].data);
       });
      
 
