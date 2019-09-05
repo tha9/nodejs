@@ -1,4 +1,4 @@
-d3.json("http://localhost:3000/mysql").then(data => draw(data));
+d3.json("https://www.tarikakyuz.com/mysql").then(data => draw(data));
 
 const ENABLED_OPACITY = 1;
 const DISABLED_OPACITY = .2;

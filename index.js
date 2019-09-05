@@ -13,9 +13,8 @@ const { JSDOM } = jsdom;
 var KEYTOKEN = 6;
 
 var sql = "SELECT token, flyFrom, flyTo, Lowest_Price_Found, Time_Collected, Flight_Date, OW_RT, connections, flight_time_total, a_time_to, duration_to, a_time_from, duration_from, carrier FROM flights"
-
-var con = mysql.createConnection({
-  host: "34.68.242.234",
+const pool = mysql.createPool({
+  socketPath: "/cloudsql/spry-chassis-249615:us-central1:my-flight-data",
   user: "read_only",
   password: "$$123##abcdefghijklmnopqrstuv!",
   database: "Tracked_Flights"
@@ -70,10 +69,13 @@ app.get('/viewdata', function (req, res) {
     
 app.get('/mysql',function(req,res) {
     res.setHeader('Content-Type', 'application/json');
-    con.query(sql, function (err, result) {
-              if (err) throw err
-              res.json(result);
+    const contentquery = pool.query(sql, function (err, result) {
+              if (err) throw err;
+             // res.json(result);
           });
+    const content = await contentquery;
+    res.json(content);
+    
 });
 
 app.post('/track-flight', (req, res) => {
