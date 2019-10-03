@@ -1,9 +1,12 @@
 var unirest= require('unirest');
 var mysql = require('mysql'); //var fs = require('fs');
 var sleep = require('await-sleep');
- 
+//const process = require('process'); 
+
 var lowestprice ='undefined'
 async function trackflights(flightdata) {
+	console.log(flightdata);
+
     if (flightdata.trackingEnd < 1) {
         flightdata.trackingEnd = 7*24*4;
     }
@@ -28,33 +31,28 @@ process.on('message', async (message) => {
 
 var currentprice = 200;
 var con = mysql.createConnection({
-  host: "34.68.242.234",
-  user: "test",
+  socketPath: '/cloudsql/'+process.env.INSTANCE_CONNECTION_NAME, //"/cloudsql/spry-chassis-249615:us-central1:my-flight-data;dbname=Tracked_Flights",
+  user: "read_only",
   password: "ifp6MtJ!Giwjmp7",
   database: "Tracked_Flights"
 });
 
 function kiwirequest(token,flyto,flyfrom,ddate,rdate,flightType) {
     //range of dates
-    date1 = '18/10/2019'
+    date1 = '10/10/2019'
     date2 = '24/10/2019'
-    token = +token;
     var addData = 'unknown'
     var time =new Date().toISOString().slice(0, 19).replace('T', ' ');
 //.toISOString()//.match(/(\d{2}:){2}\d{2}/)[0]
 
       //need to add to this table first so that foreign key is valid (will need additional SQL to update if tracking fails
     if(currentprice === 200) {
-        con.connect(function(err) {
-              if (err) throw err;
-              console.log("Connected!");
-              var sql = "INSERT INTO tracking (token,username,tracking_length,submission_time,route) VALUES ("+token+",'tarik_akyuz',3,'"+time+"','"+flyfrom+"_"+flyto+"')";
-                 console.log(sql);
-              con.query(sql, function (err, result) {
+	    var sql = "INSERT INTO tracking (token,username,tracking_length,submission_time,route) VALUES ("+token+",'tarik_akyuz',3,'"+time+"','"+flyfrom+"_"+flyto+"')";
+	    console.log(sql);
+	    con.query(sql, function (err, result) {
                if (err) throw err;
                console.log("1 record inserted");
-              });
-        });
+	    });
     }
     
     unirest.get('https://api.skypicker.com/flights?flyFrom='+flyfrom+'&to='+flyto+'&dateFrom='+date1+'&dateTo='+date2+'&partner=picky')
