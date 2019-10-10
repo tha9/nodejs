@@ -1,32 +1,201 @@
 <!DOCTYPE html>
-<html>
-<body>
+<html><head></head><body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
-<h2>Submit Job<h2>
 
-<form action="/track-flight/" method='post'>
+<h2>Submit Job</h2><h2>
+
+<form autocomplete="off" id=myform action="/track-flight/" method="post">
     <label for="flyfrom">Departure Airport </label><br>
-  <input type="text" id="flyfrom" name="flyfrom" value="">
+    <div class="autocomplete" style="width:300px;">
+    <input type="text" id="flyfrom" name="flyfrom" value="" onchange="autofill('flyfrom')">
+    </div>
+        <text class='error' id='flyfromerror'></text>
+
   <br>
-  
-    <label for=flyto>Destination Airport </label> <br>
-  <input type="text" id="flyto" name="flyto" value="">
-  <br><br>
+
+    <div class="autocomplete" style="width:300px;">
+    <label for="flyto">Destination Airport </label> <br>
+  <input type="text" id="flyto" name="flyto" value="" onchange="autofill('flyto')">
+    </div>
+          <text class='error' id='flytoerror'></text>
+
+
+    <br><br>
  
-    <label for=trackingEnd>How long should we track this flight?</label><br>
-    <input type="number" min="1" max="30" id='trackingEnd' name='trackingEnd' value='1'>
+    <label for="trackingEnd">How long should we track this flight?</label><br>
+    <input type="number" min="1" max="30" id="trackingEnd" name="trackingEnd" value="1">
     <br><br>   
     
-    <label for=dDate>Date of Departure</label><br>
-    <input type='date' name='dDate' id=dDate >
+    <label for="dDate">Date of Departure</label><br>
+    <input type="date" name="dDate" id="dDate">
     <br><br>
     
-    <label for=rDate>Date of Return</label><br>
-    <input type='date' name='rDate' id=rDate >
+    <label for="rDate">Date of Return</label><br>
+    <input type="date" name="rDate" id="rDate">
     <br><br>
   <input type="submit" value="Track Flight">
 </form> 
 
-    <a href='/viewdata'>Click here for data</a>
-</body>
-</html>
+    <a href="/viewdata">Click here for data</a>
+    <link rel="stylesheet" href="styles.css">
+<script type="text/javascript">
+function autofill(id) {
+    document.getElementById(id+'error').innerText='';
+    var found, i, val = document.getElementById(id).value;
+      if (!val) {
+          found = 0;
+      }
+    else {
+        var arr = getAirports(val);
+        if(arr.length > 0) {
+            document.getElementById(id).value = arr[0];
+            found = 1
+        }
+  }
+    if(!found) {
+    document.getElementById(id+'error').innerText='invalid value';
+    }
+
+}
+</script>
+<script type="text/javascript">
+    $('#myform').submit(function() {
+    if(document.getElementById('flyfrom').value.length < 3 || document.getElementById('flyto').value.length < 3) {
+  alert('Forms contains invalid elements, please resolve');
+  return false;
+    } 
+     var r_Date = new Date(document.getElementById('rDate').value);
+     var d_Date = new Date(document.getElementById('dDate').value);
+     var currentDate = new Date();
+    if (d_Date == 'Invalid Date' || r_Date == 'Invalid Date' || d_Date < currentDate || d_Date > r_Date) {
+        alert('invalid dates');
+        return false
+    }
+        return true;
+});
+    </script>
+    <script type="text/javascript">
+        function getAirports(txtvalue) {
+            var arr = [] 
+          
+      var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var test = JSON.parse(xhttp.responseText);
+for (i = 0; i < test["locations"].length; i++) { 
+  arr[i] = test["locations"][i]["code"];
+}
+  //document.getElementById("demo").innerHTML = JSON.stringify(arr);
+    }
+  };
+xhttp.open("GET", "https://api.skypicker.com/locations?term="+txtvalue+"&locale=en-US&location_types=airport&limit=10&active_only=true&sort=name", false);
+  xhttp.send();
+          return arr;
+        }
+    </script>
+<script type="text/javascript">
+    function autocomplete(inp) {
+  /*the autocomplete function takes two arguments,
+  the text field element and an array of possible autocompleted values:*/
+  var currentFocus;
+  /*execute a function when someone writes in the text field:*/
+  inp.addEventListener("input", function(e) {
+      var a, b, i, val = this.value;
+
+      var arr = getAirports(this.value,true);
+      /*close any already open lists of autocompleted values*/
+
+      closeAllLists();
+      if (!val) { return false;}
+      currentFocus = -1;
+      /*create a DIV element that will contain the items (values):*/
+      a = document.createElement("DIV");
+      a.setAttribute("id", this.id + "autocomplete-list");
+      a.setAttribute("class", "autocomplete-items");
+      /*append the DIV element as a child of the autocomplete container:*/
+      this.parentNode.appendChild(a);
+      /*for each item in the array...*/
+      for (i = 0; i < arr.length; i++) {
+        /*API call to KIWI handles filtering. All values are valid (checking name of airport in addition to code)*/
+          /*create a DIV element for each matching element:*/
+          b = document.createElement("DIV");
+          /*make the matching letters bold:*/
+          b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+          b.innerHTML += arr[i].substr(val.length);
+          /*insert a input field that will hold the current array item's value:*/
+          b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+          /*execute a function when someone clicks on the item value (DIV element):*/
+              b.addEventListener("click", function(e) {
+              /*insert the value for the autocomplete text field:*/
+              inp.value = this.getElementsByTagName("input")[0].value;
+              /*close the list of autocompleted values,
+              (or any other open lists of autocompleted values:*/
+              closeAllLists();
+          });
+          a.appendChild(b);
+      }
+  }); 
+  /*execute a function presses a key on the keyboard:*/
+  inp.addEventListener("keydown", function(e) {
+      var x = document.getElementById(this.id + "autocomplete-list");
+      if (x) x = x.getElementsByTagName("div");
+      if (e.keyCode == 40) {
+        /*If the arrow DOWN key is pressed,
+        increase the currentFocus variable:*/
+        currentFocus++;
+        /*and and make the current item more visible:*/
+        addActive(x);
+      } else if (e.keyCode == 38) { //up
+        /*If the arrow UP key is pressed,
+        decrease the currentFocus variable:*/
+        currentFocus--;
+        /*and and make the current item more visible:*/
+        addActive(x);
+      } else if (e.keyCode == 13) {
+        /*If the ENTER key is pressed, prevent the form from being submitted,*/
+        e.preventDefault();
+        if (currentFocus > -1) {
+          /*and simulate a click on the "active" item:*/
+          if (x) x[currentFocus].click();
+        }
+      }
+  });
+  function addActive(x) {
+    /*a function to classify an item as "active":*/
+    if (!x) return false;
+    /*start by removing the "active" class on all items:*/
+    removeActive(x);
+    if (currentFocus >= x.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (x.length - 1);
+    /*add class "autocomplete-active":*/
+    x[currentFocus].classList.add("autocomplete-active");
+  }
+  function removeActive(x) {
+    /*a function to remove the "active" class from all autocomplete items:*/
+    for (var i = 0; i < x.length; i++) {
+      x[i].classList.remove("autocomplete-active");
+    }
+  }
+  function closeAllLists(elmnt) {
+    /*close all autocomplete lists in the document,
+    except the one passed as an argument:*/
+    var x = document.getElementsByClassName("autocomplete-items");
+    for (var i = 0; i < x.length; i++) {
+      if (elmnt != x[i] && elmnt != inp) {
+      x[i].parentNode.removeChild(x[i]);
+    }
+  }
+}
+/*execute a function when someone clicks in the document:*/
+document.addEventListener("click", function (e) {
+    closeAllLists(e.target);
+});
+    }</script>
+    <script>
+ autocomplete(document.getElementById("flyfrom"));
+         autocomplete(document.getElementById("flyto"));
+
+    </script>
+
+</h2></body></html>
